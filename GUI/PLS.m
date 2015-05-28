@@ -211,7 +211,7 @@ function information_message(handles)
         case 1
             text=sprintf('Enter the number of latent variables in the general plots section and select between Var Y, Var Y + scores, Y-SVI Plot and Y-crossval.\nThen press the plot button.');
         case 2
-            text=sprintf('Enter the number of latent variables to work with and press on the PCA button to perform the initial analysis and activate the Score Plot, Loading Plot and MEDA menus.');
+            text=sprintf('Enter the number of latent variables to work with and press on the PLS button to perform the initial analysis and activate the Score Plot, Loading Plot and MEDA menus.');
         case 3
             text=sprintf('Plot a Score plot, a Loading plot, a MEDA plot or Residual/Model plot, by clicking on  the proper menu.');
         case 4
