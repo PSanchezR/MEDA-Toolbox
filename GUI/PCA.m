@@ -161,6 +161,7 @@ handles.data.CORTES={};
 handles.data.matrix_2PCs={};
 handles.data.PCs_MEDA='';
 handles.data.auxPCs=0;
+handles.data.visualizationPopup = {};
 
 %Change icon
 %warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
@@ -652,6 +653,16 @@ handles.data.auxPCs=1;
 end
 
 [handles.data.matrixLoadings,handles.data.matrixScores]=pca_pp(handles.data.data_matrix,max(handles.data.PCs));
+
+%TODO crear estructura con la información que necesita la parte de
+%visualización
+
+%Añadir un identificador a este struct en el visualizationPopup
+handles.data.visualizationPopup{end + 1} = strcat(getCurrentPopupString(handles.dataPopup),'-PCs-',get(handles.pcEdit,'string'));
+handles.data.visualizationPopup
+set(handles.visualizationPopup, 'String',handles.data.visualizationPopup);
+
+%TODO añadir funcionalidad al botón visualization
 
 %TODO eliminar toda referencia a la interfaz que ya no está
 %TODO General el struct con la información necesaria
