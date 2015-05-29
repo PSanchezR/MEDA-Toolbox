@@ -22,14 +22,14 @@ function varargout = VISUALIZATIONPCA(varargin)
 
 % Edit the above text to modify the response to help VISUALIZATIONPCA
 
-% Last Modified by GUIDE v2.5 29-May-2015 12:13:30
+% Last Modified by GUIDE v2.5 29-May-2015 15:16:57
 
 % Begin initialization code - DO NOT EDIT
 if size(varargin) == 0,
     h = msgbox('You should specify a struct argument in VISUALIZATIONPCA','Error message');
     return;   
 end
-gui_Singleton = 1;
+gui_Singleton = 0;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
                    'gui_OpeningFcn', @VISUALIZATIONPCA_OpeningFcn, ...
@@ -56,9 +56,36 @@ function VISUALIZATIONPCA_OpeningFcn(hObject, eventdata, handles, varargin)
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to VISUALIZATIONPCA (see VARARGIN)
 
-%TODO extract from the first argument the struct necessary for the
+%Extract from the first argument the struct necessary for the
 %visualization.    
 handles.data = varargin{1};
+%Change the name of the visualization GUI
+set(handles.figure1,'Name',handles.data.title);
+%Si la variable handles.data.PCs es distinta de vacía, imprimir en xpcscorePopup,
+%xpcvarPopup, ypcvarPopup y ypcscorePopup los PCs posibles.
+if ~isempty(handles.data.PCs),
+    set(handles.xpcscorePopup, 'String',handles.data.PCs);
+    set(handles.ypcscorePopup, 'String',handles.data.PCs);
+    set(handles.xpcvarPopup, 'String',handles.data.PCs);
+    set(handles.ypcvarPopup, 'String',handles.data.PCs);
+    
+    %Imprimir en popupmenu de submenu MEDA todas las combinaciones posibles
+    %para hacer MEDA
+    k=min(handles.data.PCs);
+    options=[];
+    for i=min(handles.data.PCs):max(handles.data.PCs),
+        for j=k:max(handles.data.PCs),
+            options=[options,i,j];
+        end
+        k=k+1;
+    end
+    
+    set(handles.medaPopup,'String','');
+    for i=1:2:(length(options)-1),
+        contents=get(handles.medaPopup,'String');
+        set(handles.medaPopup,'String',strvcat(contents,sprintf('%d:%d',options(i),options(i+1))));
+    end
+end
 
 % Choose default command line output for VISUALIZATIONPCA
 handles.output = hObject;
@@ -576,8 +603,8 @@ else if get(handles.thresRadio,'Value')==0 && get(handles.serRadio,'Value')==1,
         end
     end
 end
-
-[meda_map,meda_dis]=meda_pca(handles.data.data_matrix,pcs,handles.data.prep,handles.data.thres,handles.data.opt,handles.data.label_LP);
+thres = str2double(get(handles.thresEdit,'String'));
+[meda_map,meda_dis]=meda_pca(handles.data.data_matrix,pcs,handles.data.prep,thres,handles.data.opt,handles.data.label_LP);
 
 guidata(hObject,handles);
 
@@ -598,17 +625,17 @@ end
 
 guidata(hObject,handles);
 
-
-function thresEdit_Callback(hObject, eventdata, handles)
-% hObject    handle to thresEdit (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of thresEdit as text
-%        str2double(get(hObject,'String')) returns contents of thresEdit as a double
-thres=str2double(get(hObject,'String'));
-handles.data.thres = thres;
-guidata(hObject,handles);
+% 
+% function thresEdit_Callback(hObject, eventdata, handles)
+% % hObject    handle to thresEdit (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    structure with handles and user data (see GUIDATA)
+% 
+% % Hints: get(hObject,'String') returns contents of thresEdit as text
+% %        str2double(get(hObject,'String')) returns contents of thresEdit as a double
+% thres=str2double(get(hObject,'String'));
+% handles.data.thres = thres;
+% guidata(hObject,handles);
 
 % --- Executes during object creation, after setting all properties.
 function thresEdit_CreateFcn(hObject, eventdata, handles)
@@ -1135,3 +1162,11 @@ else
 end
 
 guidata(hObject,handles);
+
+function thresEdit_Callback(hObject, eventdata, handles)
+% hObject    handle to thresEdit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of thresEdit as text
+%        str2double(get(hObject,'String')) returns contents of thresEdit as a double
