@@ -162,6 +162,7 @@ handles.data.matrix_2PCs={};
 handles.data.PCs_MEDA='';
 handles.data.auxPCs=0;
 handles.data.visualizationPopup = {};
+handles.data.visualizationPopupStruct = {};
 
 %Change icon
 %warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
@@ -654,19 +655,6 @@ end
 
 [handles.data.matrixLoadings,handles.data.matrixScores]=pca_pp(handles.data.data_matrix,max(handles.data.PCs));
 
-%TODO crear estructura con la información que necesita la parte de
-%visualización
-
-%Añadir un identificador a este struct en el visualizationPopup
-handles.data.visualizationPopup{end + 1} = strcat(getCurrentPopupString(handles.dataPopup),'-PCs-',get(handles.pcEdit,'string'));
-handles.data.visualizationPopup
-set(handles.visualizationPopup, 'String',handles.data.visualizationPopup);
-
-%TODO añadir funcionalidad al botón visualization
-
-%TODO eliminar toda referencia a la interfaz que ya no está
-%TODO General el struct con la información necesaria
-
 %Definición del estado de la interfaz tras pulsar PCA:
 %Score plot
 set(handles.xpcscorePopup,'Enable','on');
@@ -708,6 +696,19 @@ set(handles.modelmedaButton,'Enable','on');
 %Information panel:
 text=sprintf('Model generated successully!');
 handles.data.sumtext=cprint(handles.sumText,text,handles.data.sumtext,0);
+
+
+%TODO crear estructura con la información que necesita la parte de
+%visualización
+handles.data.visualizationPopupStruct{end + 1} = handles.data;
+
+%Añadir un identificador a este struct en el visualizationPopup
+handles.data.visualizationPopup{end + 1} = strcat(num2str(length(handles.data.visualizationPopup)+1),'-',getCurrentPopupString(handles.dataPopup),'-PCs-',get(handles.pcEdit,'string'));
+set(handles.visualizationPopup, 'String',handles.data.visualizationPopup);
+
+%TODO cambiar los PC x-axes e y-axes (con un handles.data.xy)
+%TODO eliminar toda referencia a la interfaz que ya no está
+
 
 guidata(hObject,handles);
 
@@ -2059,8 +2060,8 @@ function visualizationButton_Callback(hObject, eventdata, handles)
 
 %Take the selected struct in visualizationPopup
 chosenStruct = getCurrentPopupString(handles.visualizationPopup);
-%TODO Get struct with the associated name
-
-%TODO Run visualization with selected struct
-
+%Get struct with the associated name
+dataStruct = handles.data.visualizationPopupStruct{get(handles.visualizationPopup,'Value')};
+%Run visualization with selected struct
+VISUALIZATIONPCA(dataStruct);
 
