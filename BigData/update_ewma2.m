@@ -1,10 +1,10 @@
-function Lmodel = update_ewma(list,path,Lmodel1,Lmodel2,lambda1,lambda2,step,debug)
+function Lmodel = update_ewma(list,path,Lmodel,lambda,step,debug,c,maxl,maxr)
 
 % Big data analysis based on bilinear proyection models (PCA and PLS), EWMA
 % approach.
 %
 % Lmodel = update_ewma(list)          % minimum call
-% Lmodel = update_ewma(list,path,Lmodel1,Lmodel2,lambda,step,debug) % complete call
+% Lmodel = update_ewma(list,path,Lmodel,lambda,step,debug) % complete call
 %
 % INPUTS:
 %
@@ -14,16 +14,10 @@ function Lmodel = update_ewma(list,path,Lmodel1,Lmodel2,lambda1,lambda2,step,deb
 % path: (str) path to the directory where the data files are located ('' by
 %   default)
 %
-% Lmodel1: (struct Lmodel) model to update (initialized to PCA model with 1
+% Lmodel: (struct Lmodel) model to update (initialized to PCA model with 1
 %   PC and auto-scaling by default)
 %
-% Lmodel2: (struct Lmodel) model to update (initialized to PCA model with 1
-%   PC and auto-scaling by default)
-%
-% lambda1: (1x1) forgetting factor between 0 (fast adaptation) and 1 (long
-%   history) (1 by default)
-%
-% lambda2: (1x1) forgetting factor between 0 (fast adaptation) and 1 (long
+% lambda: (1x1) forgetting factor between 0 (fast adaptation) and 1 (long
 %   history) (1 by default)
 %
 % step: (1x1) percentage of the data in the file to be used in each
@@ -35,13 +29,19 @@ function Lmodel = update_ewma(list,path,Lmodel1,Lmodel2,lambda1,lambda2,step,deb
 %       2: display all messages.  
 %
 %
+% c: GUI element for output (0 by default).
+%
+% maxl: (1x1) maximum length of a line, in characters (500 by default).
+%
+% maxr: (1x1) maximum number of lines in console (15 by default).
+%
 % OUTPUTS:
 %
 % Lmodel: (struct Lmodel) model updated.
 %
 %
 % coded by: Jose Camacho Paez (josecamacho@ugr.es)
-% last modification: 03/Sep/15
+% last modification: 06/Feb/15
 %
 % Copyright (C) 2014  University of Granada, Granada
 % Copyright (C) 2014  Jose Camacho Paez
@@ -64,32 +64,26 @@ function Lmodel = update_ewma(list,path,Lmodel1,Lmodel2,lambda1,lambda2,step,deb
 if nargin < 1, error('Error in the number of arguments.'); end;
 if nargin < 2, path = ''; end;
 if nargin < 3, 
-    Lmodel1 = Lmodel_ini; 
-    Lmodel1.type = 1;
-    Lmodel1.lv = 1;
-    Lmodel1.prep = 2;
+    Lmodel = Lmodel_ini; 
+    Lmodel.type = 1;
+    Lmodel.lv = 1;
+    Lmodel.prep = 2;
 end;
-if nargin < 4, 
-    Lmodel2 = Lmodel_ini; 
-    Lmodel2.type = 1;
-    Lmodel2.lv = 1;
-    Lmodel2.prep = 2;
-end;
-if nargin < 5, lambda1 = 1; end;
-if nargin < 6, lambda2 = 1; end;
-if nargin < 7, step = 1; end;
-if nargin < 8, debug = 1; end;
-    
+if nargin < 4, lambda = 1; end;
+if nargin < 5, step = 1; end;
+if nargin < 6, debug = 1; end;
+if nargin < 7, c = 0; end;
+if nargin <8, maxl = 68; end;
+if nargin < 9 , maxr = 15; end;    
     
 % Computation
-
-Lmodel = Lmodel1;
 
 Lmodel.update = 1; 
     
 for t=1:length(list),
     
-    if debug, disp(sprintf('clustering: packet %d...........................................', t)), end;
+    %if debug, disp(sprintf('clustering: packet %d...........................................', t)), end;
+    if debug, cprint(c,sprintf('clustering: packet %d...........................................', t),'',1,0.1,maxl,maxr), end;
     
     if Lmodel.type==1,
         if isstruct(list(t))
@@ -135,17 +129,15 @@ for t=1:length(list),
     N = Lmodel.N;
     indMV = find(isnan(x));
     if ~isempty(indMV)
-        disp('Missing values found in X. Set to average.');
+        %disp('Missing values found in X. Set to average.');
+        cprint(c,'Missing values found in X. Set to average.','',1,0.1,maxl,maxr);
         av = ones(size(x,1),1)*Lmodel.av;
         x(indMV) = av(indMV);
     end
          
-    [xcs,Lmodel.av,Lmodel.sc,Lmodel.N] = preprocess2Di(x,Lmodel.prep,0,(lambda1+lambda2),(lambda1*Lmodel1.av+lambda2*Lmodel2.av)/(lambda1+lambda2),(lambda1*Lmodel1.sc+lambda2*Lmodel2.sc)/(lambda1+lambda2),(lambda1*Lmodel1.N+lambda2*Lmodel2.N)/(lambda1+lambda2),(lambda1*Lmodel1.weight+lambda2*Lmodel2.weight)/(lambda1+lambda2));
+    [xcs,Lmodel.av,Lmodel.sc,Lmodel.N] = preprocess2Di(x,Lmodel.prep,0,lambda,Lmodel.av,Lmodel.sc,Lmodel.N,Lmodel.weight);
     
-    Lmodel.XX = lambda1*Lmodel1.XX + lambda2*Lmodel2.XX + xcs'*xcs;
-    
-    ind = isnan(Lmodel.XX);
-    Lmodel.XX(ind) = 0;
+    Lmodel.XX = lambda*Lmodel.XX + xcs'*xcs;
     
     if Lmodel.type==1
         
@@ -156,15 +148,16 @@ for t=1:length(list),
         
         indMV = find(isnan(y));
         if ~isempty(indMV)
-            disp('Missing values found in Y. Set to average.');
+            %disp('Missing values found in Y. Set to average.');
+            cprint(c,'Missing values found in Y. Set to average.','',1,0.1,maxl,maxr);
             av = ones(size(y,1),1)*Lmodel.avy;
             y(indMV) = av(indMV);
         end
     
-        [ycs,Lmodel.avy,Lmodel.scy] = preprocess2Di(y,Lmodel.prepy,0,1,lambda1*Lmodel1.avy+lambda2*Lmodel2.avy,lambda1*Lmodel1.scy+lambda2*Lmodel2.scy,lambda1*Lmodel1.N+lambda2*Lmodel2.N,lambda1*Lmodel1.weight+lambda2*Lmodel2.weight);
+        [ycs,Lmodel.avy,Lmodel.scy] = preprocess2Di(y,Lmodel.prepy,0,lambda,Lmodel.avy,Lmodel.scy,N,Lmodel.weight);
         
-        Lmodel.XY = lambda1*Lmodel1.XY + lambda2*Lmodel2.XY + xcs'*ycs;
-        Lmodel.YY = lambda1*Lmodel1.YY + lambda2*Lmodel2.YY + ycs'*ycs;
+        Lmodel.XY = lambda*Lmodel.XY + xcs'*ycs;
+        Lmodel.YY = lambda*Lmodel.YY + ycs'*ycs;
         
         if rank(Lmodel.XY)>0,
             
@@ -173,7 +166,8 @@ for t=1:length(list),
             
         else
             
-            if debug>1, disp('XY Rank 0: using PCA.'), end;
+            %if debug>1, disp('XY Rank 0: using PCA.'), end;
+            if debug>1, cprint(c,'XY Rank 0: using PCA.','',1,0.1,maxl,maxr), end;
             
             [P,sdT] = Lpca(Lmodel);
             Lmodel.mat = P*diag(1./sdT);
@@ -182,16 +176,11 @@ for t=1:length(list),
         
     end
     
-    Lmodel.multr = [lambda1*Lmodel1.multr;lambda2*Lmodel2.multr];
+    Lmodel.multr = lambda*Lmodel.multr;
     ind_lab = find(Lmodel.multr>1);
-    Lmodel.centr =  [Lmodel1.centr;Lmodel2.centr];
     Lmodel.centr =  Lmodel.centr(ind_lab,:);
     Lmodel.multr = Lmodel.multr(ind_lab);
-    Lmodel.class =  [Lmodel1.class;Lmodel2.class];
     Lmodel.class = Lmodel.class(ind_lab);
-    Lmodel.obs_l =  {Lmodel1.obs_l{:} Lmodel2.obs_l{:}};
-    Lmodel.updated = zeros(length(ind_lab),1);
-    
     if ~isempty(Lmodel.obs_l)
         Lmodel.obs_l = Lmodel.obs_l(ind_lab);    
     end
@@ -213,10 +202,9 @@ for t=1:length(list),
         Lmodel.multr = [Lmodel.multr;ones(ss,1)];
         Lmodel.class = [Lmodel.class;clstep];
         Lmodel.obs_l = {Lmodel.obs_l{:} obs_step{:}};
-        Lmodel.updated = [Lmodel.updated;ones(size(xstep,1),1)];  
             
-        [Lmodel.centr,Lmodel.multr,Lmodel.class,Lmodel.obs_l,Lmodel.updated] = psc(Lmodel.centr,Lmodel.nc,Lmodel.multr,Lmodel.class,Lmodel.obs_l,Lmodel.updated,Lmodel.mat);
-  
+        [Lmodel.centr,Lmodel.multr,Lmodel.class,Lmodel.obs_l] = psc(Lmodel.centr,Lmodel.nc,Lmodel.multr,Lmodel.class,Lmodel.obs_l,Lmodel.mat);
+
     end
     
 end
